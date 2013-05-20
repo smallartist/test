@@ -1,0 +1,96 @@
+import java.io.IOException;
+
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.methods.PostMethod;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.select.Elements;
+
+public class WeiboLogin {
+  
+	public static void main(String[] args){
+		String username = "";// enter your username;
+		String password = "";// enter your password;
+		getMCookies(username,password);
+	}
+	
+	/**
+     * 获取手机版微博的cookies
+     * @param username
+     *             微博用户名
+     * @param password
+     *             微博密码
+     * @return    Cookie[]
+     */
+    public static Cookie[] getMCookies(String username, String password){
+        Cookie[] cookies = null;
+        HttpClient client;
+        PostMethod post = null;
+        try{
+            Document doc = Jsoup.connect("http://3g.sina.com.cn/prog/wapsite/sso/login.php").get();
+            Elements elements = doc.getElementsByTag("postfield");
+            for(int a=0;a<elements.size();a++){
+            	System.out.println(elements.get(a));
+            }
+            
+        
+            String randUrl = doc.getElementsByTag("go").first().attr("href");        
+            String pwName = elements.get(1).attr("name");
+            String vkValue = elements.get(2).attr("value");
+            String backURL = elements.get(4).attr("value");
+            String backTitle = elements.get(5).attr("value");
+            System.out.println("1========"+randUrl+"========");
+            System.out.println("2========"+pwName+"========");
+            System.out.println("3========"+vkValue+"========");
+            System.out.println("4========"+backURL+"========");
+            System.out.println("5========"+backTitle+"========");
+            
+            String url = "http://3g.sina.com.cn/prog/wapsite/sso/"+randUrl;
+            System.out.println(url);
+            post = new PostMethod(url);
+            
+            post.setRequestHeader("User-Agent","Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.77 Safari/537.1");
+            post.setRequestHeader("Referer", "http://weibo.com/");
+            post.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            
+            post.setParameter("mobile", username);
+            post.setParameter(pwName,password);
+            post.setParameter("vk", vkValue);
+            post.setParameter("remember", "on");
+            post.setParameter("backURL", backURL);
+            post.setParameter("backTitle", backTitle);
+            post.setParameter("submit", "1");   
+            
+            
+            GetMethod getMethod = new GetMethod(url);
+            //使用系统提供的默认的恢复策略
+            getMethod.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
+            new DefaultHttpMethodRetryHandler());
+          
+            //client = new HttpClient(); 
+            client = new HttpClient();
+            client.executeMethod(post);
+            
+            
+            System.out.println("服务器返回的状态"+post.getStatusLine());
+            System.out.println("返回的信息"+post.getResponseBodyAsString());
+            System.out.println(post.getPath());
+            
+            cookies = client.getState().getCookies();
+            System.out.println("cookies值："+cookies.toString());
+            
+        }catch(IOException e){
+            e.printStackTrace();
+        }finally{
+        	System.out.println("over!");
+            post.abort();
+        }
+            
+        return cookies; 
+    }
+}
+
